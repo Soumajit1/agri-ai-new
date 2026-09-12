@@ -113,4 +113,68 @@ router.post("/login", async (req, res) => {
     }
 });
 
+// ==========================================
+// REGISTER ROUTE
+// ==========================================
+router.post("/register", async (req, res) => {
+    try {
+        const { name, email, password, role, mobile, location } = req.body;
+
+        if (!name || !email || !password || !role) {
+            return res.status(400).json({
+                message: "Name, email, password, and role are required."
+            });
+        }
+
+        const allowedRoles = ["farmer", "buyer", "fpo", "admin"];
+        if (!allowedRoles.includes(role)) {
+            return res.status(400).json({
+                message: "Invalid user role."
+            });
+        }
+
+        // Check if user exists
+        db.query("SELECT id FROM users WHERE email = ? LIMIT 1", [email], async (err, results) => {
+            if (err) {
+                console.error("Database error checking user:", err);
+                return res.status(500).json({ message: "Database error." });
+            }
+
+            if (results && results.length > 0) {
+                return res.status(400).json({ message: "Email is already registered." });
+            }
+
+            try {
+                // Hash the password
+                const salt = await bcrypt.genSalt(10);
+                const hashedPassword = await bcrypt.hash(password, salt);
+
+                // Insert into database
+                const insertSql = `
+                    INSERT INTO users (name, email, password, role, mobile, location)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                `;
+
+                db.query(insertSql, [name, email, hashedPassword, role, mobile || null, location || null], (insertErr, result) => {
+                    if (insertErr) {
+                        console.error("Error inserting user:", insertErr);
+                        return res.status(500).json({ message: "Failed to create user." });
+                    }
+
+                    return res.status(201).json({
+                        message: "Registration successful",
+                        userId: result.insertId
+                    });
+                });
+            } catch (hashError) {
+                console.error("Password hash error:", hashError);
+                return res.status(500).json({ message: "Error hashing password." });
+            }
+        });
+    } catch (error) {
+        console.error("Register route error:", error);
+        return res.status(500).json({ message: "Internal server error during registration." });
+    }
+});
+
 module.exports = router;
