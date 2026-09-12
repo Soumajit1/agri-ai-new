@@ -1,0 +1,15 @@
+Render settings:
+Language: Node
+Branch: main
+Root Directory: empty
+Build Command: npm install
+Start Command: npm start
+Plan: Free
+
+Environment variables:
+DB_HOST=<Aiven Host>
+DB_PORT=<Aiven Port>
+DB_USER=avnadmin
+DB_PASSWORD=<Aiven Password>
+DB_NAME=defaultdb
+JWT_SECRET=<strong random secret>
