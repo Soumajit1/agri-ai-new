@@ -136,8 +136,8 @@ router.post("/register", async (req, res) => {
         // Check if user exists
         db.query("SELECT id FROM users WHERE email = ? LIMIT 1", [email], async (err, results) => {
             if (err) {
-                console.error("Database error checking user:", err);
-                return res.status(500).json({ message: "Database error." });
+                console.error("Database error checking user:", err.message, err.code);
+                return res.status(500).json({ message: "Database error.", error: err.message });
             }
 
             if (results && results.length > 0) {
@@ -157,8 +157,8 @@ router.post("/register", async (req, res) => {
 
                 db.query(insertSql, [name, email, hashedPassword, role, mobile || null, location || null], (insertErr, result) => {
                     if (insertErr) {
-                        console.error("Error inserting user:", insertErr);
-                        return res.status(500).json({ message: "Failed to create user." });
+                        console.error("Error inserting user:", insertErr.message, insertErr.code, insertErr.sqlState);
+                        return res.status(500).json({ message: "Failed to create user.", error: insertErr.message });
                     }
 
                     return res.status(201).json({
