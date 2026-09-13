@@ -55,7 +55,7 @@ app.use(express.static(__dirname));
 // });
 
 // --------------------------------------------------
-// Database test
+// Database test and setup
 // --------------------------------------------------
 
 app.get("/api/test-db", (req, res) => {
@@ -82,6 +82,43 @@ app.get("/api/test-db", (req, res) => {
             });
         }
     );
+});
+
+app.get("/api/setup-db", (req, res) => {
+    const fs = require('fs');
+    const path = require('path');
+    
+    try {
+        const schema = fs.readFileSync(path.join(__dirname, 'schema.sql'), 'utf8');
+        const queries = schema.split(';').filter(q => q.trim().length > 0);
+        
+        let completed = 0;
+        let hasError = false;
+        
+        if (queries.length === 0) {
+            return res.json({ message: "No queries to run" });
+        }
+        
+        queries.forEach(query => {
+            db.query(query, (err) => {
+                if (hasError) return;
+                
+                if (err) {
+                    hasError = true;
+                    console.error("Query failed:", err);
+                    return res.status(500).json({ error: "Failed to setup DB", details: err.message });
+                }
+                
+                completed++;
+                if (completed === queries.length) {
+                    res.json({ message: "Database tables created successfully!" });
+                }
+            });
+        });
+    } catch (err) {
+        console.error("Setup error:", err);
+        res.status(500).json({ error: "Failed to read schema file" });
+    }
 });
 
 // --------------------------------------------------
