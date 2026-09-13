@@ -121,6 +121,45 @@ app.get("/api/setup-db", (req, res) => {
     }
 });
 
+app.get("/api/check-db", (req, res) => {
+    db.query("SHOW TABLES", (err, tables) => {
+        if (err) return res.status(500).json({ error: err.message });
+        
+        db.query("DESCRIBE users", (err2, columns) => {
+            if (err2) return res.json({ tables, usersError: err2.message });
+            res.json({ tables, usersColumns: columns });
+        });
+    });
+});
+
+app.get("/api/reset-db", (req, res) => {
+    const drops = [
+        "DROP TABLE IF EXISTS shipments",
+        "DROP TABLE IF EXISTS transactions",
+        "DROP TABLE IF EXISTS offers",
+        "DROP TABLE IF EXISTS notifications",
+        "DROP TABLE IF EXISTS produce_listings",
+        "DROP TABLE IF EXISTS users"
+    ];
+    
+    let completed = 0;
+    let hasError = false;
+    
+    drops.forEach(q => {
+        db.query(q, (err) => {
+            if (hasError) return;
+            if (err) {
+                hasError = true;
+                return res.status(500).json({ error: "Drop failed", details: err.message });
+            }
+            completed++;
+            if (completed === drops.length) {
+                res.json({ message: "All tables dropped. Now visit /api/setup-db to recreate." });
+            }
+        });
+    });
+});
+
 // --------------------------------------------------
 // Global error handler
 // --------------------------------------------------
